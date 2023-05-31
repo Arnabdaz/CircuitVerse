@@ -1,4 +1,4 @@
-name: Update Submodules
+name: Update Submodules & build Vue App
 
 on:
   push:

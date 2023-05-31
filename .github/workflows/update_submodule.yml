@@ -1,0 +1,74 @@
+name: Update Submodules
+
+on:
+  push:
+    branches:
+      - GSoCweek1VueSimIntegrationActions
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Pull Latest Changes From Main Branch
+        run: |
+          git checkout GSoCweek1VueSimIntegrationActions
+          git pull
+
+      - name: Checkout to New Branch
+        run: |
+          git checkout -b GSoCweek1VueSimIntegrationActionstest || git checkout GSoCweek1VueSimIntegrationActionstest
+
+      - name: Merge Main Branch Into New Branch
+        run: |
+          git merge GSoCweek1VueSimIntegrationActions --allow-unrelated-histories --no-ff --no-commit
+
+      - name: Update Submodules
+        run: |
+          git config --file=.gitmodules submodule.cv-frontend-vue.branch main
+          git submodule update --init --remote cv-frontend-vue
+
+      - name: Check if Submodule Updated
+        id: check_submodule
+        run: |
+          CHANGE=$(git diff --exit-code cv-frontend-vue)
+          if [[ -n "$CHANGE" ]]; then
+            echo "::set-output name=submodule_updated::true"
+          else
+            echo "::set-output name=submodule_updated::false"
+          fi
+
+      - name: Use Node.js 18.16.0
+        uses: actions/setup-node@v2
+        if: steps.check_submodule.outputs.submodule_updated == 'true'
+        with:
+          node-version: "18.16.0"
+
+      - name: Run npm install and build
+        if: steps.check_submodule.outputs.submodule_updated == 'true'
+        run: |
+          cd cv-frontend-vue
+          npm install
+          npm run build
+          cd ..
+
+      - name: Remove from .gitignore
+        if: steps.check_submodule.outputs.submodule_updated == 'true'
+        run: |
+          sed -i '/public\/simulatorvue/d' .gitignore
+
+      - name: Commit and Push
+        if: steps.check_submodule.outputs.submodule_updated == 'true'
+        run: |
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'actions@github.com'
+          git add .
+          git reset .gitignore
+          git commit -m "Updated Submodule" || exit 0
+          git push origin GSoCweek1VueSimIntegrationActionstest

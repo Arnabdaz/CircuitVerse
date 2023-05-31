@@ -16,6 +16,11 @@ jobs:
           submodules: "recursive"
           fetch-depth: 0
 
+      - name: Set Git Config
+        run: |
+          git config --global user.name 'Arnabdaz'
+          git config --global user.email 'arnab-das@outlook.com'
+
       - name: Pull Latest Changes From Main Branch
         run: |
           git checkout GSoCweek1VueSimIntegrationActions
@@ -67,9 +72,7 @@ jobs:
       - name: Commit and Push
         if: steps.check_submodule.outputs.submodule_updated == 'true'
         run: |
-          git config --global user.name 'Arnabdaz'
-          git config --global user.email 'arnab-das@outlook.com'
           git add .
-          git reset .gitignore
+          git restore --staged .gitignore
           git commit -m "Updated Submodule" || exit 0
           git push origin GSoCweek1VueSimIntegrationActionstest

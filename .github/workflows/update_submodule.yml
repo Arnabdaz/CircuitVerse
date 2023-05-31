@@ -31,7 +31,7 @@ jobs:
 
       - name: Update Submodules
         run: |
-          git config --file=.gitmodules submodule.cv-frontend-vue.branch main
+          git config --file=.gitmodules submodule.cv-frontend-vue.branch GSoCweek1VueSimIntegration
           git submodule update --init --remote cv-frontend-vue
 
       - name: Check if Submodule Updated

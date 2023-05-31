@@ -23,7 +23,7 @@ jobs:
 
       - name: Checkout to New Branch
         run: |
-          git checkout -b GSoCweek1VueSimIntegrationActionstest || git checkout GSoCweek1VueSimIntegrationActionstest
+          git switch GSoCweek1VueSimIntegrationActionstest || git switch -c GSoCweek1VueSimIntegrationActionstest
 
       - name: Merge Main Branch Into New Branch
         run: |
@@ -37,8 +37,9 @@ jobs:
       - name: Check if Submodule Updated
         id: check_submodule
         run: |
-          CHANGE=$(git diff --exit-code cv-frontend-vue)
-          if [[ -n "$CHANGE" ]]; then
+          LOCAL=$(git rev-parse @:./cv-frontend-vue)
+          REMOTE=$(git ls-remote --exit-code --refs https://github.com/<submodule-repo>/cv-frontend-vue main | cut -f1)
+          if [[ "$LOCAL" != "$REMOTE" ]]; then
             echo "::set-output name=submodule_updated::true"
           else
             echo "::set-output name=submodule_updated::false"

@@ -1,7 +1,11 @@
 const path = require('path');
+const fs = require('fs');
 const esbuild = require('esbuild');
 const rails = require('esbuild-rails');
 const sassPlugin = require('esbuild-plugin-sass');
+const { spawnSync } = require('child_process');
+const readline = require('readline');
+const crypto = require('crypto');
 
 const watchDirectories = [
     './app/javascript/**/*.js',
@@ -16,7 +20,7 @@ const watchPlugin = {
     setup(build) {
         build.onStart(() => {
             // eslint-disable-next-line no-console
-            console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
+        console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
         });
         build.onEnd((result) => {
             if (result.errors.length > 0) {
@@ -26,6 +30,62 @@ const watchPlugin = {
                 // eslint-disable-next-line no-console
                 console.log(`Build finished successfully: ${new Date(Date.now()).toLocaleString()}`);
             }
+        });
+    },
+};
+
+function calculateHash(file) {
+    const data = fs.readFileSync(file);
+    return crypto.createHash('md5').update(data).digest('hex');
+}
+
+function runCommand(command, args, cwd) {
+    const { error, stderr, stdout } = spawnSync(command, args, { cwd, shell: true });
+    if (error) {
+        console.error(`error: ${error.message}`);
+        console.error(`stderr: ${stderr}`);
+        return false;
+    }
+    console.log(`stdout: ${stdout}`);
+    return true;
+}
+
+async function buildVue() {
+    const cwd = path.join(process.cwd(), 'cv-frontend-vue');
+    const packageLock = path.join(cwd, 'package-lock.json');
+    const nodeModules = path.join(cwd, 'node_modules');
+
+    let oldHash = '';
+    if (fs.existsSync(packageLock)) {
+        oldHash = fs.readFileSync(packageLock, 'utf8');
+    }
+
+    if (!runCommand('git', ['submodule', 'update', '--init', '--remote'], process.cwd())) {
+        return;
+    }
+
+    const newHash = fs.existsSync(packageLock) ? calculateHash(packageLock) : '';
+
+    if (oldHash !== newHash || !fs.existsSync(nodeModules) || !fs.existsSync(packageLock)) {
+        if (!runCommand('npm', ['install'], cwd)) {
+            return;
+        }
+        fs.writeFileSync(packageLock, newHash);
+    }
+
+    if (!runCommand('npm', ['run', 'build'], cwd)) {
+        return;
+    }
+}
+
+
+
+const vuePlugin = {
+    name: 'vuePlugin',
+    setup(build) {
+        build.onStart(() => {
+            console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
+            buildVue();
         });
     },
 };
@@ -40,10 +100,21 @@ async function run() {
         loader: {
             '.png': 'file', '.svg': 'file', '.ttf': 'file', '.woff': 'file', '.woff2': 'file', '.eot': 'file',
         },
-        plugins: [rails(), sassPlugin(), watchPlugin],
+        plugins: [rails(), sassPlugin(), vuePlugin, watchPlugin],
     });
 
     if (watch) {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
+
+        rl.on('line', (input) => {
+            if (input.trim() === 'r' || input.trim() === 'R') {
+                buildVue();
+            }
+        });
+
         await context.watch();
     } else {
         await context.rebuild();

@@ -29,7 +29,7 @@ const watchPlugin = {
     },
 };
 
-async function buildVue() {
+function buildVue() {
     execSync('git submodule update --init --remote', { cwd: process.cwd() });
     execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
     execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
@@ -46,8 +46,6 @@ const vuePlugin = {
 };
 
 async function run() {
-    await buildVue();
-
     const context = await esbuild.context({
         entryPoints: ['application.js', 'simulator.js', 'testbench.js', './cv-frontend-vue/src/main.js'],
         bundle: true,

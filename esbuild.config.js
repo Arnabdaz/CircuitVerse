@@ -3,7 +3,7 @@ const esbuild = require('esbuild');
 const rails = require('esbuild-rails');
 const sassPlugin = require('esbuild-plugin-sass');
 const { execSync } = require('child_process');
-const readline = require('readline');
+const keypress = require('keypress');
 
 const watchDirectories = [
     './app/javascript/**/*.js',
@@ -16,11 +16,16 @@ const watch = process.argv.includes('--watch');
 const watchPlugin = {
     name: 'watchPlugin',
     setup(build) {
-        console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
+        build.onStart(() => {
+            // eslint-disable-next-line no-console
+            console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
+        });
         build.onEnd((result) => {
             if (result.errors.length > 0) {
+                // eslint-disable-next-line no-console
                 console.error(`Build finished, with errors: ${new Date(Date.now()).toLocaleString()}`);
             } else {
+                // eslint-disable-next-line no-console
                 console.log(`Build finished successfully: ${new Date(Date.now()).toLocaleString()}`);
             }
         });
@@ -57,13 +62,9 @@ async function run() {
     });
 
     if (watch) {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
-
-        rl.on('line', (input) => {
-            if (input.trim() === 'r' || input.trim() === 'R') {
+        keypress(process.stdin);
+        process.stdin.on('keypress', (ch, key) => {
+            if (key && (key.name === 'r' || key.name === 'R')) {
                 execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
             }
         });

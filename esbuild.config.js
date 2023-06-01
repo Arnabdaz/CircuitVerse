@@ -31,6 +31,21 @@ const watchPlugin = {
     },
 };
 
+async function buildVue() {
+    execSync('git submodule update --init --remote', { cwd: process.cwd() });
+    execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+    execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+}
+
+const vuePlugin = {
+    name: 'vuePlugin',
+    setup(build) {
+        build.onStart(() => {
+            console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
+        });
+    },
+};
+
 async function run() {
     const context = await esbuild.context({
         entryPoints: ['application.js', 'simulator.js', 'testbench.js'],
@@ -41,7 +56,7 @@ async function run() {
         loader: {
             '.png': 'file', '.svg': 'file', '.ttf': 'file', '.woff': 'file', '.woff2': 'file', '.eot': 'file',
         },
-        plugins: [rails(), sassPlugin(), watchPlugin],
+        plugins: [rails(), sassPlugin(), vuePlugin, watchPlugin],
     });
 
     if (watch) {

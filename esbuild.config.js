@@ -30,6 +30,7 @@ const watchPlugin = {
 };
 
 async function buildVue() {
+    execSync('git submodule update --init --remote', { cwd: process.cwd() });
     execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
     execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
 }

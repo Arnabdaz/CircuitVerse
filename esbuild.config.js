@@ -46,6 +46,8 @@ const vuePlugin = {
 };
 
 async function run() {
+    await buildVue();
+
     const context = await esbuild.context({
         entryPoints: ['application.js', 'simulator.js', 'testbench.js', './cv-frontend-vue/src/main.js'],
         bundle: true,

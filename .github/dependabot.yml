@@ -23,6 +23,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      time: "16:40"
     labels:
       - "dependencies"
       - "automerge"

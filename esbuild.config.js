@@ -70,7 +70,6 @@ async function buildVue() {
         if (!runCommand('npm', ['install'], cwd)) {
             return;
         }
-        fs.writeFileSync(packageLock, newHash);
     }
 
     if (!runCommand('npm', ['run', 'build'], cwd)) {

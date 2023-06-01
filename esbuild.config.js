@@ -3,6 +3,7 @@ const esbuild = require('esbuild');
 const rails = require('esbuild-rails');
 const sassPlugin = require('esbuild-plugin-sass');
 const { execSync } = require('child_process');
+const chokidar = require('chokidar');
 
 const watchDirectories = [
     './app/javascript/**/*.js',
@@ -16,43 +17,23 @@ const watch = process.argv.includes('--watch');
 const watchPlugin = {
     name: 'watchPlugin',
     setup(build) {
-        build.onStart(() => {
-            console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
-        });
+        // eslint-disable-next-line no-console
+        console.log(`Build starting: ${new Date(Date.now()).toLocaleString()}`);
         build.onEnd((result) => {
             if (result.errors.length > 0) {
+                // eslint-disable-next-line no-console
                 console.error(`Build finished, with errors: ${new Date(Date.now()).toLocaleString()}`);
             } else {
+                // eslint-disable-next-line no-console
                 console.log(`Build finished successfully: ${new Date(Date.now()).toLocaleString()}`);
             }
         });
     },
 };
 
-function buildVue() {
-    return new Promise((resolve, reject) => {
-        try {
-            execSync('git submodule update --init --remote', { cwd: process.cwd() });
-            execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
-            execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
 async function run() {
-    try {
-        console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
-        await buildVue();
-    } catch (error) {
-        console.error('Error building Vue:', error);
-        process.exit(1);
-    }
-
     const context = await esbuild.context({
-        entryPoints: ['application.js', 'simulator.js', 'testbench.js', './cv-frontend-vue/src/main.js'],
+        entryPoints: ['application.js', 'simulator.js', 'testbench.js'],
         bundle: true,
         outdir: path.join(process.cwd(), 'app/assets/builds'),
         absWorkingDir: path.join(process.cwd(), 'app/javascript'),
@@ -64,6 +45,12 @@ async function run() {
     });
 
     if (watch) {
+        const watcher = chokidar.watch('./cv-frontend-vue', { ignoreInitial: true });
+        watcher.on('all', (event) => {
+            if (event === 'change') {
+                execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+            }
+        });
         await context.watch();
     } else {
         await context.rebuild();

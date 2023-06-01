@@ -30,22 +30,27 @@ const watchPlugin = {
 };
 
 function buildVue() {
-    execSync('git submodule update --init --remote', { cwd: process.cwd() });
-    execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
-    execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+    return new Promise((resolve, reject) => {
+        try {
+            execSync('git submodule update --init --remote', { cwd: process.cwd() });
+            execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+            execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
-const vuePlugin = {
-    name: 'vuePlugin',
-    setup(build) {
-        build.onStart(() => {
-            console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
-            buildVue();
-        });
-    },
-};
-
 async function run() {
+    try {
+        console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
+        await buildVue();
+    } catch (error) {
+        console.error('Error building Vue:', error);
+        process.exit(1);
+    }
+
     const context = await esbuild.context({
         entryPoints: ['application.js', 'simulator.js', 'testbench.js', './cv-frontend-vue/src/main.js'],
         bundle: true,
@@ -55,7 +60,7 @@ async function run() {
         loader: {
             '.png': 'file', '.svg': 'file', '.ttf': 'file', '.woff': 'file', '.woff2': 'file', '.eot': 'file',
         },
-        plugins: [rails(), sassPlugin(), vuePlugin, watchPlugin],
+        plugins: [rails(), sassPlugin(), watchPlugin],
     });
 
     if (watch) {

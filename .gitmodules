@@ -1,4 +1,4 @@
 [submodule "cv-frontend-vue"]
 	path = cv-frontend-vue
-	url = https://github.com/CircuitVerse/cv-frontend-vue.git
-	branch = main # update with the branch from which you want to fetch the updates
+	url = https://github.com/Arnabdaz/cv-frontend-vue.git
+	branch = GSoCweek1VueSimIntegration

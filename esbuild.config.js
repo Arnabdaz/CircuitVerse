@@ -1,9 +1,10 @@
 const path = require('path');
+const fs = require('fs');
 const esbuild = require('esbuild');
 const rails = require('esbuild-rails');
 const sassPlugin = require('esbuild-plugin-sass');
-const { execSync } = require('child_process');
 const readline = require('readline');
+const { exec } = require('child_process');
 
 const watchDirectories = [
     './app/javascript/**/*.js',
@@ -12,6 +13,7 @@ const watchDirectories = [
 ];
 
 const watch = process.argv.includes('--watch');
+const build_vue_simulator = process.env.BUILD_VUE === 'true';
 
 const watchPlugin = {
     name: 'watchPlugin',
@@ -34,11 +36,19 @@ const watchPlugin = {
 
 async function buildVue() {
     try {
-        execSync('git submodule update --init --remote', { cwd: process.cwd() });
-        execSync('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
-        execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
-    } catch (error) {
-        console.error(`Error building Vue site: ${error} : ${new Date(Date.now()).toLocaleString()}`);
+        await exec('git submodule update --init --remote', { cwd: process.cwd() });
+        const packageJsonPath = path.join(process.cwd(), 'cv-frontend-vue', 'package.json');
+        const packageLockJsonPath = path.join(process.cwd(), 'cv-frontend-vue', 'package-lock.json');
+
+        if (fs.existsSync(packageJsonPath) && fs.existsSync(packageLockJsonPath)) {
+            await exec('npm install', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+            await exec('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+        } else {
+            throw new Error('package.json or package-lock.json is not found inside submodule directory')
+        }
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(`Error building Vue simulator: ${new Date(Date.now()).toLocaleString()}\n\n${err}`);
         process.exit(1);
     }
 }
@@ -49,12 +59,14 @@ const vuePlugin = {
         build.onStart(() => {
             // eslint-disable-next-line no-console
             console.log(`Building Vue site: ${new Date(Date.now()).toLocaleString()}`);
-            buildVue();
         });
     },
 };
 
 async function run() {
+    if (build_vue_simulator) {
+        await buildVue();
+    }
     const context = await esbuild.context({
         entryPoints: ['application.js', 'simulator.js', 'testbench.js'],
         bundle: true,
@@ -68,23 +80,23 @@ async function run() {
     });
 
     if (watch) {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
+        if (build_vue_simulator) {
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout,
+            });
 
-        rl.on('line', (input) => {
-            if (input.trim() === 'r' || input.trim() === 'R') {
-                try{
-                execSync('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+            rl.on('line', (input) => {
+                if (input.trim().toLowerCase() === 'r') {
+                    const nodeModulesPath = path.join(process.cwd(), 'cv-frontend-vue', 'node_modules');
+                    if (fs.existsSync(nodeModulesPath)) {
+                        exec('npm run build', { cwd: path.join(process.cwd(), 'cv-frontend-vue') });
+                    } else {
+                        buildVue();
+                    }
                 }
-                catch(error){
-                    console.error(`Error building Vue site: ${error} : ${new Date(Date.now()).toLocaleString()}`);
-                    buildVue();
-                }
-            }
-        });
-
+            });
+        }
         await context.watch();
     } else {
         await context.rebuild();

@@ -162,6 +162,18 @@ Rails.application.routes.draw do
       get "/notifications", to: "notifications#index"
       patch "/notifications/mark_as_read/:notification_id", to: "notifications#mark_as_read"
       patch "/notifications/mark_all_as_read", to: "notifications#mark_all_as_read"
+      resources :simulator, only: %i[] do
+        collection do
+          patch :update, path: "update"
+          post :create, path: "create"
+          post :post_issue, path: "post_issue"
+          post :verilogcv, path: "verilogcv"
+        end
+        member do
+          get :edit
+          get :data
+        end
+      end
       get "/me", to: "users#me"
       post "/forgot_password", to: "users#forgot_password"
       resources :users, only: %i[index show update]

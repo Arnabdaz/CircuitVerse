@@ -17,7 +17,8 @@ class Api::V1::SimulatorController < Api::V1::BaseController
 
   # GET api/v1/simulator/:id/edit
   def edit
-    render json: Api::V1::UserSerializer.new(current_user)
+    @options = { params: { has_details_access: true } }
+    render json: Api::V1::UserSerializer.new(current_user, @options)
   end
 
   # GET api/v1/simulator/:id/data

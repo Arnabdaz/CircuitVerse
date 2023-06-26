@@ -20,17 +20,21 @@ class JwtTokenStrategy < Warden::Strategies::Base
   private
 
     def token
-      authorization_header_token || cookie_token
+      env["HTTP_AUTHORIZATION"].to_s.remove("Token ")
     end
 
-    def authorization_header_token
-      pattern = /^Token /
-      header = env["HTTP_AUTHORIZATION"]
-      header.gsub(pattern, "") if header&.match(pattern)
-    end
+    # def token
+    #   authorization_header_token || cookie_token
+    # end
 
-    def cookie_token
-      cvt_cookie = env["HTTP_COOKIE"]&.split("; ")&.find { |c| c.start_with?("cvt=") }
-      cvt_cookie&.gsub("cvt=", "")
-    end
+    # def authorization_header_token
+    #   pattern = /^Token /
+    #   header = env["HTTP_AUTHORIZATION"]
+    #   header.gsub(pattern, "") if header&.match(pattern)
+    # end
+
+    # def cookie_token
+    #   cvt_cookie = env["HTTP_COOKIE"]&.split("; ")&.find { |c| c.include?("cvt=") }
+    #   cvt_cookie&.split("cvt=")&.last
+    # end
 end

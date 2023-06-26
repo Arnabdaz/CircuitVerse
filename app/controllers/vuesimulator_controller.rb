@@ -3,14 +3,14 @@
 
 class VuesimulatorController < ApplicationController
   def simulatorvue
-    html = File.read(Rails.root("public/simulatorvue/index.html"))
-    sanitized_html = sanitize(html)
-    render html: sanitized_html, layout: false
+    html = File.read(Rails.root.join("public/simulatorvue/index.html"))
+    # sanitized_html = sanitize(html)
+    render html: html.html_safe, layout: false
   end
 
-  private
+  # private
 
-    def sanitize(html)
-      ActionController::Base.helpers.sanitize(html)
-    end
+  #   def sanitize(html)
+  #     ActionController::Base.helpers.sanitize(html)
+  #   end
 end
